@@ -27,6 +27,7 @@
 #include "CoreTask.h"
 #include "THPTask.h"
 #include "LCDTask.h"
+#include "GPSTask.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -650,8 +651,10 @@ void StartGPSTask(void *argument)
 {
   /* USER CODE BEGIN StartGPSTask */
   /* Infinite loop */
+  GPSTask gpsTask( &huart5 );
   for(;;)
   {
+    gpsTask.runTask();
     osDelay(1);
   }
   /* USER CODE END StartGPSTask */
