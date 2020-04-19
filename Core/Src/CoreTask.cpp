@@ -19,6 +19,7 @@ CoreTask::~CoreTask() {
 }
 
 void CoreTask::runTask() {
-  HAL_GPIO_TogglePin( GPIOB, GPIO_PIN_0 );
-  osDelay(100);
+  // TODO - read queues, forward messages to appropriate devices
+  HAL_GPIO_TogglePin( GPIOB, GPIO_PIN_0 ); // Blink the Green LED
+  osDelay(500);
 }

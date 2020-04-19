@@ -25,6 +25,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "CoreTask.h"
+#include "THPTask.h"
+#include "LCDTask.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -608,10 +610,11 @@ void StartLCDTask(void *argument)
 {
   /* USER CODE BEGIN StartLCDTask */
   /* Infinite loop */
+  LCDTask lcdTask( &huart7 );
   for(;;)
   {
-    HAL_GPIO_TogglePin( GPIOB, LD2_Pin ); // Blue
-    osDelay(500);
+    lcdTask.runTask();
+    osDelay(1);
   }
   /* USER CODE END StartLCDTask */
 }
@@ -627,10 +630,11 @@ void StartTHPTask(void *argument)
 {
   /* USER CODE BEGIN StartTHPTask */
   /* Infinite loop */
+  THPTask thpTask( &hi2c2 );
   for(;;)
   {
-    HAL_GPIO_TogglePin( GPIOB, LD3_Pin ); // Red
-    osDelay(1000);
+    thpTask.runTask();
+    osDelay(1);
   }
   /* USER CODE END StartTHPTask */
 }
