@@ -28,6 +28,7 @@
 #include "THPTask.h"
 #include "LCDTask.h"
 #include "GPSTask.h"
+#include "RadioTask.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -671,8 +672,10 @@ void StartRadioTask(void *argument)
 {
   /* USER CODE BEGIN StartRadioTask */
   /* Infinite loop */
+  RadioTask radioTask( &hi2c1 );
   for(;;)
   {
+    radioTask.runTask();
     osDelay(1);
   }
   /* USER CODE END StartRadioTask */
