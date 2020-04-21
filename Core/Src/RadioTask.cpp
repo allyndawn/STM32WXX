@@ -20,24 +20,30 @@ RadioTask::~RadioTask() {
 }
 
 void RadioTask::runTask() {
-	uint8_t buffer[2];
+	uint8_t tx_buffer[3];
+	uint8_t rx_buffer[3];
+
 	HAL_StatusTypeDef halStatus;
 
 	if ( RADIOTASK_SEARCHING == m_state ) {
-		//HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_RESET ); // nCS LOW
-		//osDelay(10);
+		HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_RESET ); // nCS LOW
 
-		//halStatus = HAL_I2C_Mem_Read( m_hi2c, RADIO_ADDRESS << 1, 0x0, sizeof(uint8_t), &buffer[0], 2 * sizeof(uint8_t), 100 );
-		//osDelay(10);
+		tx_buffer[0] = 0x80;
+		tx_buffer[1] = 0;
+		tx_buffer[2] = 0;
+		rx_buffer[0] = 0;
+		rx_buffer[1] = 0;
+		rx_buffer[2] = 0;
+		halStatus = HAL_SPI_Transmit( m_hspi, &tx_buffer[0], 1, 1 );
+		halStatus = HAL_SPI_Receive( m_hspi, &rx_buffer[0], 2, 1 );
 
-		//HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_SET ); // nCS HIGH
-		//osDelay(10);
+		HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_SET ); // nCS HIGH
 
 		// this->softReset();
 		//m_state = RADIOTASK_READY;
 	}
 
-	osDelay( 1000 );
+	osDelay( 500 );
 }
 
 void RadioTask::softReset() {
