@@ -17,7 +17,7 @@ enum RadioState {
 
 class RadioTask {
 	public:
-		RadioTask(I2C_HandleTypeDef *hi2c);
+		RadioTask(SPI_HandleTypeDef *hspi);
 		virtual ~RadioTask();
 
 		void runTask();
@@ -25,6 +25,6 @@ class RadioTask {
 
 	private:
 		RadioState m_state;
-		I2C_HandleTypeDef *m_hi2c;};
+		SPI_HandleTypeDef *m_hspi;};
 
 #endif /* SRC_RADIOTASK_H_ */
