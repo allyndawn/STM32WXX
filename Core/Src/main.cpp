@@ -24,6 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "bme280.h"
 #include "CoreTask.h"
 #include "THPTask.h"
 #include "LCDTask.h"
@@ -139,7 +140,7 @@ const osMessageQueueAttr_t radioQueue_attributes = {
   .name = "radioQueue"
 };
 /* USER CODE BEGIN PV */
-
+struct bme280_dev thpDevice;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -156,12 +157,56 @@ void StartGPSTask(void *argument);
 void StartRadioTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-
+void THPDevice_Delay_ms(uint32_t period);
+int8_t THPDevice_Read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len);
+int8_t THPDevice_Write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void THPDevice_Delay_ms(uint32_t microsec) {
+	uint32_t millisec = microsec / 1000;
+	if ( millisec < 1 ) {
+		millisec = 1;
+	}
+	osDelay( millisec );
+}
 
+int8_t THPDevice_Read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len) {
+	if ( id != thpDevice.dev_id ) {
+		return BME280_E_COMM_FAIL;
+	}
+
+	HAL_StatusTypeDef halResult = HAL_I2C_Mem_Read(
+			&hi2c2,
+			id << 1,
+			reg_addr,
+			I2C_MEMADD_SIZE_8BIT,
+			data,
+			len,
+			100
+	);
+
+	return ( HAL_OK == halResult ? BME280_OK : BME280_E_COMM_FAIL);
+}
+
+int8_t THPDevice_Write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len) {
+	if ( id != thpDevice.dev_id ) {
+		return BME280_E_COMM_FAIL;
+	}
+
+	HAL_StatusTypeDef halResult = HAL_I2C_Mem_Write(
+			&hi2c2,
+			id << 1,
+			reg_addr,
+			I2C_MEMADD_SIZE_8BIT,
+			data,
+			len,
+			100
+	);
+
+	return ( HAL_OK == halResult ? BME280_OK : BME280_E_COMM_FAIL);
+}
 /* USER CODE END 0 */
 
 /**
@@ -346,7 +391,11 @@ static void MX_I2C2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN I2C2_Init 2 */
-
+  thpDevice.dev_id = BME280_I2C_ADDR_PRIM; // 0x76
+  thpDevice.intf = BME280_I2C_INTF;
+  thpDevice.read = THPDevice_Read;
+  thpDevice.write = THPDevice_Write;
+  thpDevice.delay_ms = THPDevice_Delay_ms;
   /* USER CODE END I2C2_Init 2 */
 
 }
@@ -625,7 +674,7 @@ void StartTHPTask(void *argument)
 {
   /* USER CODE BEGIN StartTHPTask */
   /* Infinite loop */
-  THPTask thpTask( &hi2c2 );
+  THPTask thpTask( thpDevice );
   for(;;)
   {
     thpTask.runTask();

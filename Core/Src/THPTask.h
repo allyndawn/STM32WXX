@@ -8,7 +8,7 @@
 #ifndef SRC_THPTASK_H_
 #define SRC_THPTASK_H_
 
-#include "stm32f4xx_hal.h"
+#include "bme280.h"
 
 enum THPState {
 	THPTASK_SEARCHING,
@@ -17,14 +17,14 @@ enum THPState {
 
 class THPTask {
 	public:
-		THPTask(I2C_HandleTypeDef *hi2c);
+		THPTask(const bme280_dev &dev);
 		virtual ~THPTask();
 
 		void runTask();
 
 	private:
 		THPState m_state;
-		I2C_HandleTypeDef *m_hi2c;
+		bme280_dev m_dev;
 
 };
 
