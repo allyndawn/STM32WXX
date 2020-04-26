@@ -25,6 +25,7 @@ class THPTask {
 	private:
 		THPState m_state;
 		bme280_dev m_dev;
+		bme280_data m_data;
 
 };
 

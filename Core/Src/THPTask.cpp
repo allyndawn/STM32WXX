@@ -43,13 +43,12 @@ void THPTask::runTask() {
 	}
 
 	if ( THPTASK_READY == m_state ) {
-		struct bme280_data comp_data;
-
 		// Set the sensor to forced mode to trigger a measurement
 		rslt = bme280_set_sensor_mode( BME280_FORCED_MODE, &m_dev );
 		if ( BME280_OK == rslt ) {
 			osDelay( 100 );
-			rslt = bme280_get_sensor_data( BME280_ALL, &comp_data, &m_dev );
+			m_data = { 0 };
+			rslt = bme280_get_sensor_data( BME280_ALL, &m_data, &m_dev );
 		}
 
 		osDelay( 1000 ); // Get updated temperature once per second
