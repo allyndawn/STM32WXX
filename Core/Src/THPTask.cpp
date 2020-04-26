@@ -7,6 +7,7 @@
 
 #include "THPTask.h"
 #include "stm32f4xx_hal.h"
+#include "TaskMessages.h"
 
 THPTask::THPTask(const bme280_dev &dev, osMessageQueueId_t queue_handle ) {
 	m_dev = dev;
@@ -36,8 +37,6 @@ void THPTask::runTask() {
 
 				// TODO read and use min delay from sensor
 				m_state = THPTASK_READY;
-				// Set the blue LED on solid to indicate success
-				HAL_GPIO_WritePin( GPIOB, GPIO_PIN_7, GPIO_PIN_SET );
 			}
 		}
 	}
@@ -49,15 +48,29 @@ void THPTask::runTask() {
 			osDelay( 100 );
 			m_data = { 0 };
 			rslt = bme280_get_sensor_data( BME280_ALL, &m_data, &m_dev );
+			if ( BME280_OK == rslt ) {
+				this->enqueueData();
+			}
 		}
+
+		// Toggle the blue LED with each update
+		HAL_GPIO_TogglePin( GPIOB, GPIO_PIN_7 );
 
 		osDelay( 1000 ); // Get updated temperature once per second
 	}
 
-	// If we haven't initialized successfully, blink the blue LED
+	// If we still haven't initialized successfully, wait 500 ms before trying again
 	if ( THPTASK_SEARCHING == m_state ) {
-		HAL_GPIO_TogglePin( GPIOB, GPIO_PIN_7 );
 		osDelay( 500 );
 	}
 
+}
+
+void THPTask::enqueueData() {
+	thp_message thp_msg = { 0 };
+	thp_msg.id = 'E';
+	thp_msg.temperature = m_data.temperature / 100;
+	thp_msg.humidity = m_data.humidity / 1000;
+	thp_msg.pressure = m_data.pressure / 100;
+	osMessageQueuePut( m_queue_handle, (void *) &thp_msg, 0, 0 );
 }

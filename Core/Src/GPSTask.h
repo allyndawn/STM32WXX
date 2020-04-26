@@ -12,18 +12,19 @@
 #include "cmsis_os.h"
 
 typedef struct {
-	uint8_t year;
+	uint16_t year;
 	uint8_t month;
 	uint8_t day;
 	uint8_t hour;
-	uint8_t min;
-	uint8_t sec;
+	uint8_t minutes;
+	uint8_t seconds;
 } gps_time;
 
 typedef struct {
-	int8_t degrees;
+	uint8_t degrees;
 	uint8_t minutes;
 	uint8_t seconds;
+	char hem;
 } gps_angle;
 
 typedef struct {
@@ -52,6 +53,7 @@ class GPSTask {
 
 		int8_t intFromString( char *buffer, int8_t offset, int8_t length );
 		bool processBuffer();
+		void enqueueData();
 };
 
 #endif /* SRC_GPSTASK_H_ */

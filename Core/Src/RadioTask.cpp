@@ -6,6 +6,7 @@
  */
 
 #include "RadioTask.h"
+#include "TaskMessages.h"
 
 #define A1846S_CTL_REG 0x30
 

@@ -30,6 +30,7 @@ class THPTask {
 		THPState m_state;
 		bme280_data m_data;
 
+		void enqueueData();
 };
 
 #endif /* SRC_THPTASK_H_ */
