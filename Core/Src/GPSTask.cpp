@@ -6,15 +6,15 @@
  */
 
 #include "GPSTask.h"
-#include "cmsis_os.h"
 #include "string.h"
 #include "stdlib.h"
 
 #define GPS_GPRMC_TOKENS 12
 #define GPS_GPRMC_MAX_TOKEN_LENGTH 12
 
-GPSTask::GPSTask( UART_HandleTypeDef *huart ) {
+GPSTask::GPSTask( UART_HandleTypeDef *huart, osMessageQueueId_t queue_handle ) {
 	m_huart = huart;
+	m_queue_handle = queue_handle;
 	m_buffer[0] = 0;
 	m_time = { 0 };
 	m_location = { 0 };

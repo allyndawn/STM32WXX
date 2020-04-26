@@ -635,7 +635,7 @@ void StartCoreTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
-  CoreTask coreTask;
+  CoreTask coreTask( gpsQueueHandle, lcdQueueHandle, radioQueueHandle, thpQueueHandle );
   for(;;)
   {
     coreTask.runTask();
@@ -654,7 +654,7 @@ void StartLCDTask(void *argument)
 {
   /* USER CODE BEGIN StartLCDTask */
   /* Infinite loop */
-  LCDTask lcdTask( &huart7 );
+  LCDTask lcdTask( &huart7, lcdQueueHandle );
   for(;;)
   {
     lcdTask.runTask();
@@ -674,7 +674,7 @@ void StartTHPTask(void *argument)
 {
   /* USER CODE BEGIN StartTHPTask */
   /* Infinite loop */
-  THPTask thpTask( thpDevice );
+  THPTask thpTask( thpDevice, thpQueueHandle );
   for(;;)
   {
     thpTask.runTask();
@@ -694,7 +694,7 @@ void StartGPSTask(void *argument)
 {
   /* USER CODE BEGIN StartGPSTask */
   /* Infinite loop */
-  GPSTask gpsTask( &huart5 );
+  GPSTask gpsTask( &huart5, gpsQueueHandle );
   for(;;)
   {
     gpsTask.runTask();
@@ -714,7 +714,7 @@ void StartRadioTask(void *argument)
 {
   /* USER CODE BEGIN StartRadioTask */
   /* Infinite loop */
-  RadioTask radioTask( &hspi1 );
+  RadioTask radioTask( &hspi1, radioQueueHandle );
   for(;;)
   {
     radioTask.runTask();

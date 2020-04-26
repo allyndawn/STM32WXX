@@ -6,12 +6,12 @@
  */
 
 #include "LCDTask.h"
-#include "cmsis_os.h"
 #include "string.h"
 #include "stdio.h"
 
-LCDTask::LCDTask( UART_HandleTypeDef *huart ) {
+LCDTask::LCDTask( UART_HandleTypeDef *huart, osMessageQueueId_t queue_handle ) {
 	m_huart = huart;
+	m_queue_handle = queue_handle;
 	m_state = LCDTASK_POWER_ON;
 	m_uloopcount = 0;
 }

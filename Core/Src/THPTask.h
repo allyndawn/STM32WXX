@@ -9,6 +9,7 @@
 #define SRC_THPTASK_H_
 
 #include "bme280.h"
+#include "cmsis_os.h"
 
 enum THPState {
 	THPTASK_SEARCHING,
@@ -17,14 +18,16 @@ enum THPState {
 
 class THPTask {
 	public:
-		THPTask(const bme280_dev &dev);
+		THPTask(const bme280_dev &dev, osMessageQueueId_t queue_handle);
 		virtual ~THPTask();
 
 		void runTask();
 
 	private:
-		THPState m_state;
 		bme280_dev m_dev;
+		osMessageQueueId_t m_queue_handle;
+
+		THPState m_state;
 		bme280_data m_data;
 
 };

@@ -7,10 +7,10 @@
 
 #include "THPTask.h"
 #include "stm32f4xx_hal.h"
-#include "cmsis_os.h"
 
-THPTask::THPTask(const bme280_dev &dev) {
+THPTask::THPTask(const bme280_dev &dev, osMessageQueueId_t queue_handle ) {
 	m_dev = dev;
+	m_queue_handle = queue_handle;
 	m_state = THPTASK_SEARCHING;
 }
 

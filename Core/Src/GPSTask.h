@@ -9,6 +9,7 @@
 #define SRC_GPSTASK_H_
 
 #include "stdint.h"
+#include "cmsis_os.h"
 
 typedef struct {
 	uint8_t year;
@@ -36,20 +37,21 @@ typedef struct {
 
 class GPSTask {
 	public:
-		GPSTask( UART_HandleTypeDef *huart );
+		GPSTask( UART_HandleTypeDef *huart, osMessageQueueId_t queue_handle );
 		virtual ~GPSTask();
 
 		void runTask();
 
 	private:
-		int8_t intFromString( char *buffer, int8_t offset, int8_t length );
-		bool processBuffer();
-
 		UART_HandleTypeDef *m_huart;
-		char m_buffer[ GPSTASK_MAX_BUFFER_LENGTH ];
+		osMessageQueueId_t m_queue_handle;
 
+		char m_buffer[ GPSTASK_MAX_BUFFER_LENGTH ];
 		gps_time m_time;
 		gps_location m_location;
+
+		int8_t intFromString( char *buffer, int8_t offset, int8_t length );
+		bool processBuffer();
 };
 
 #endif /* SRC_GPSTASK_H_ */

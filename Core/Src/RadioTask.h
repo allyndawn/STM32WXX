@@ -9,6 +9,7 @@
 #define SRC_RADIOTASK_H_
 
 #include "stm32f4xx_hal.h"
+#include "cmsis_os.h"
 
 enum RadioState {
 	RADIOTASK_SEARCHING,
@@ -17,14 +18,16 @@ enum RadioState {
 
 class RadioTask {
 	public:
-		RadioTask(SPI_HandleTypeDef *hspi);
+		RadioTask( SPI_HandleTypeDef *hspi, osMessageQueueId_t queue_handle );
 		virtual ~RadioTask();
 
 		void runTask();
 		void softReset();
 
 	private:
+		SPI_HandleTypeDef *m_hspi;
+		osMessageQueueId_t m_queue_handle;
 		RadioState m_state;
-		SPI_HandleTypeDef *m_hspi;};
+};
 
 #endif /* SRC_RADIOTASK_H_ */

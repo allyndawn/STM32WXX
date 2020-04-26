@@ -6,12 +6,12 @@
  */
 
 #include "RadioTask.h"
-#include "cmsis_os.h"
 
 #define A1846S_CTL_REG 0x30
 
-RadioTask::RadioTask(SPI_HandleTypeDef *hspi) {
+RadioTask::RadioTask( SPI_HandleTypeDef *hspi, osMessageQueueId_t queue_handle ) {
 	m_hspi = hspi;
+	m_queue_handle = queue_handle;
 	m_state = RADIOTASK_SEARCHING;
 }
 
