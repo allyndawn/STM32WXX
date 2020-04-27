@@ -21,6 +21,8 @@ THPTask::~THPTask() {
 void THPTask::runTask() {
 	int8_t rslt = BME280_OK;
 
+	HAL_GPIO_WritePin( GPIOB, GPIO_PIN_7, GPIO_PIN_SET );
+
 	if ( THPTASK_SEARCHING == m_state ) {
 		rslt = bme280_init( &m_dev );
 		if ( BME280_OK == rslt ) {
@@ -52,18 +54,11 @@ void THPTask::runTask() {
 				this->enqueueData();
 			}
 		}
-
-		// Toggle the blue LED with each update
-		HAL_GPIO_TogglePin( GPIOB, GPIO_PIN_7 );
-
-		osDelay( 1000 ); // Get updated temperature once per second
 	}
 
-	// If we still haven't initialized successfully, wait 500 ms before trying again
-	if ( THPTASK_SEARCHING == m_state ) {
-		osDelay( 500 );
-	}
+	HAL_GPIO_WritePin( GPIOB, GPIO_PIN_7, GPIO_PIN_RESET );
 
+	osDelay( 1000 ); // Get updated temperature once per second
 }
 
 void THPTask::enqueueData() {

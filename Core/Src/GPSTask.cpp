@@ -179,6 +179,8 @@ void GPSTask::runTask() {
 	HAL_StatusTypeDef hal_status;
 	uint8_t uc_received;
 
+	HAL_GPIO_WritePin( GPIOB, GPIO_PIN_0, GPIO_PIN_SET );
+
 	// Get as many characters as we can from the device, adding them to the buffer
 	do {
 		hal_status = HAL_UART_Receive( m_huart, &uc_received, 1, 50 );
@@ -201,6 +203,8 @@ void GPSTask::runTask() {
 			}
 		}
 	} while ( HAL_OK == hal_status );
+
+	HAL_GPIO_WritePin( GPIOB, GPIO_PIN_0, GPIO_PIN_RESET );
 
 	osDelay( 1000 );
 }

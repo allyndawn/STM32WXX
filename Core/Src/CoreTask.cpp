@@ -28,6 +28,8 @@ void CoreTask::runTask() {
 	osStatus_t status;
 	uint8_t msg[9];
 
+	//HAL_GPIO_WritePin( GPIOB, GPIO_PIN_0, GPIO_PIN_SET );
+
 	// Forward GPS messages to the LCD and Radio
 	status = osMessageQueueGet( m_gps_queue_handle, (void *) &(msg[0]), NULL, 0U );
 	if ( status == osOK ) {
@@ -42,6 +44,6 @@ void CoreTask::runTask() {
 		//osMessageQueuePut( m_radio_queue_handle, (void *) &(msg[0]), 0U, 0U );
 	}
 
-	HAL_GPIO_TogglePin( GPIOB, GPIO_PIN_0 ); // Blink the Green LED
+	//HAL_GPIO_WritePin( GPIOB, GPIO_PIN_0, GPIO_PIN_RESET );
 	osDelay(100);
 }

@@ -41,7 +41,7 @@ void RadioTask::runTask() {
 		HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_SET ); // nCS HIGH
 
 		// this->softReset();
-		//m_state = RADIOTASK_READY;
+		m_state = RADIOTASK_READY;
 	}
 
 	osDelay( 500 );
