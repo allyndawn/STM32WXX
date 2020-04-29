@@ -196,7 +196,7 @@ void GPSTask::runTask() {
 				m_buffer[0] = 0;
 			} else {
 				size_t c_buflen = strlen( m_buffer );
-				if ( GPSTASK_MAX_BUFFER_LENGTH - 1 > c_buflen ) {
+				if ( GPSTASK_MAX_BUFFER_LENGTH - 1 >= c_buflen  ) {
 					m_buffer[ c_buflen ] = uc_received;
 					m_buffer[ c_buflen + 1 ] = 0;
 				}
