@@ -54,6 +54,9 @@ class GPSTask {
 		int8_t intFromString( char *buffer, int8_t offset, int8_t length );
 		bool processBuffer();
 		void enqueueData();
+
+		uint32_t m_sr_flags;
+		uint32_t m_dr_flags;
 };
 
 #endif /* SRC_GPSTASK_H_ */

@@ -183,6 +183,12 @@ void GPSTask::runTask() {
 
 	// Get as many characters as we can from the device, adding them to the buffer
 	do {
+		// Read any error flags so reception doesn't stall
+		// (Don't care if we get errors - we can just wait for the next line)
+		m_dr_flags = m_huart->Instance->DR;
+		m_sr_flags = m_huart->Instance->SR;
+
+		// Receive any bits
 		hal_status = HAL_UART_Receive( m_huart, &uc_received, 1, 50 );
 		if ( HAL_OK == hal_status ) {
 			if ( '$' == uc_received ) {
