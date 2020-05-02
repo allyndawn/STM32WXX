@@ -22,22 +22,22 @@ class LCDTask {
 		LCDTask( UART_HandleTypeDef *huart, osMessageQueueId_t queue_handle );
 		virtual ~LCDTask();
 
+		void setRTCHandle( RTC_HandleTypeDef *hrtc );
 		void runTask();
 
 	private:
 		UART_HandleTypeDef *m_huart;
 		osMessageQueueId_t m_queue_handle;
+
+		RTC_HandleTypeDef *m_rtc_handle;
+		HAL_StatusTypeDef m_last_rtc_status;
+		RTC_TimeTypeDef m_time;
+		RTC_DateTypeDef m_date;
+
 		LCDState m_state;
 
+		char m_temp_value[64];
 		char m_buffer[64];
-
-		bool m_has_date;
-		uint16_t m_year;
-		uint8_t m_month;
-		uint8_t m_day;
-		uint8_t m_hour;
-		uint8_t m_minutes;
-		uint8_t m_seconds;
 
 		bool m_has_thp;
 		int16_t m_temperature;
@@ -57,6 +57,11 @@ class LCDTask {
 		uint32_t m_os_ticks_per_second;
 		uint32_t m_os_ticks_next_update;
 
+		void prepareTimeDisplay();
+		void prepareWeatherDisplay();
+		void prepareLocationDisplay();
+
+		void getRTCDateTime();
 		void processQueue();
 		void processTHPMsg( thp_message *msg );
 		void processDateMsg( gps_datetime_message *msg );

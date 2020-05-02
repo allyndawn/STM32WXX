@@ -24,6 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "TaskMessages.h"
 #include "bme280.h"
 #include "CoreTask.h"
 #include "THPTask.h"
@@ -266,16 +267,16 @@ int main(void)
 
   /* Create the queue(s) */
   /* creation of lcdQueue */
-  lcdQueueHandle = osMessageQueueNew (16, 9, &lcdQueue_attributes);
+  lcdQueueHandle = osMessageQueueNew (4, TASKMESSAGES_MESSAGE_SIZE_BYTES, &lcdQueue_attributes);
 
   /* creation of thpQueue */
-  thpQueueHandle = osMessageQueueNew (16, 9, &thpQueue_attributes);
+  thpQueueHandle = osMessageQueueNew (4, TASKMESSAGES_MESSAGE_SIZE_BYTES, &thpQueue_attributes);
 
   /* creation of gpsQueue */
-  gpsQueueHandle = osMessageQueueNew (16, 9, &gpsQueue_attributes);
+  gpsQueueHandle = osMessageQueueNew (4, TASKMESSAGES_MESSAGE_SIZE_BYTES, &gpsQueue_attributes);
 
   /* creation of radioQueue */
-  radioQueueHandle = osMessageQueueNew (16, 9, &radioQueue_attributes);
+  radioQueueHandle = osMessageQueueNew (4, TASKMESSAGES_MESSAGE_SIZE_BYTES, &radioQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -711,6 +712,8 @@ void StartCoreTask(void *argument)
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
   CoreTask coreTask( gpsQueueHandle, lcdQueueHandle, radioQueueHandle, thpQueueHandle );
+  coreTask.setRTCHandle( &hrtc );
+
   for(;;)
   {
     coreTask.runTask();
@@ -731,6 +734,8 @@ void StartLCDTask(void *argument)
   /* USER CODE BEGIN StartLCDTask */
   /* Infinite loop */
   LCDTask lcdTask( &huart7, lcdQueueHandle );
+  lcdTask.setRTCHandle( &hrtc );
+
   for(;;)
   {
     lcdTask.runTask();

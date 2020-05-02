@@ -119,7 +119,7 @@ bool GPSTask::processBuffer() {
 	if ( strlen( m_scratchpad[9] ) != 6 ) {
 		return false;
 	}
-	new_time.year = 2000 + this->intFromString( 9, 4, 2 );
+	new_time.year = this->intFromString( 9, 4, 2 );
 	new_time.month = this->intFromString( 9, 2, 2 );
 	new_time.day = this->intFromString( 9, 0, 2 );
 

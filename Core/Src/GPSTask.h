@@ -10,6 +10,7 @@
 
 #include "stdint.h"
 #include "cmsis_os.h"
+#include "stm32f4xx_hal.h"
 
 typedef struct {
 	uint16_t year;
@@ -31,8 +32,6 @@ typedef struct {
 	gps_angle latitude;
 	gps_angle longitude;
 } gps_location;
-
-#include "stm32f4xx_hal.h"
 
 enum GPSTaskState {
 	GPSTASK_POWER_ON,

@@ -11,6 +11,8 @@
 // Used for inter task communication
 // All structures should be 9 bytes long (1 byte id + 8 data bytes)
 
+#define TASKMESSAGES_MESSAGE_SIZE_BYTES 9
+
 typedef struct {
 	int8_t id; // always 'E'
 	int16_t temperature; // deg C
