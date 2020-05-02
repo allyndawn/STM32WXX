@@ -13,7 +13,7 @@
 GPSTask::GPSTask( UART_HandleTypeDef *huart, osMessageQueueId_t queue_handle ) {
 	m_huart = huart;
 	m_queue_handle = queue_handle;
-	m_buffer[0] = 0;
+	m_buffer_bytes = 0;
 	m_time = { 0 };
 	m_location = { 0 };
 }
@@ -37,8 +37,7 @@ int8_t GPSTask::intFromString( int8_t index, int8_t offset, int8_t length ) {
 
 bool GPSTask::processBuffer() {
 	// Is the buffer between 16 and 66 chars?
-	size_t length = strlen( m_buffer );
-	if ( ( length < 16 ) | ( length > 66 ) ) {
+	if ( ( m_buffer_bytes < 16 ) | ( m_buffer_bytes > 66 ) ) {
 		return false;
 	}
 
@@ -49,7 +48,7 @@ bool GPSTask::processBuffer() {
 
 	// Does it have exactly 11 commas?
 	uint8_t comma_count = 0;
-	for ( uint8_t i=0; i < length; i++ ) {
+	for ( uint8_t i=0; i < m_buffer_bytes; i++ ) {
 		if ( ',' == m_buffer[i] ) {
 			comma_count++;
 		}
@@ -59,7 +58,7 @@ bool GPSTask::processBuffer() {
 	}
 
 	// Does it have a checksum delimeter 3 characters from the end?
-	if ( '*' != m_buffer[ length - 3 ] ) {
+	if ( '*' != m_buffer[ m_buffer_bytes - 3 ] ) {
 		return false;
 	}
 
@@ -67,12 +66,12 @@ bool GPSTask::processBuffer() {
 	// A NEMA checksum is all the characters between the $ and the *
 	// XOR'd with each other and then turned into a two digit hex value
 	uint8_t calculated_checksum = 0;
-	for ( uint8_t i=1; i < length - 3; i++ ) {
+	for ( uint8_t i=1; i < m_buffer_bytes - 3; i++ ) {
 		calculated_checksum ^= (uint8_t) m_buffer[i];
 	}
 
 	// Check the checksum
-	unsigned long checksum = strtoul( m_buffer + length - 2, NULL, 16 );
+	unsigned long checksum = strtoul( m_buffer + m_buffer_bytes - 2, NULL, 16 );
 	if ( checksum != calculated_checksum ) {
 		return false;
 	}
@@ -90,7 +89,7 @@ bool GPSTask::processBuffer() {
 	dataChar[0] = 0;
 	dataChar[1] = 0;
 
-	for ( uint8_t i=0; i < length; i++ ) {
+	for ( uint8_t i=0; i < m_buffer_bytes; i++ ) {
 		if ( ',' == m_buffer[i] ) {
 			tokenIndex++;
 		} else if (strlen( m_scratchpad[tokenIndex] ) < GPSTASK_GPRMC_MAX_TOKEN_LENGTH - 1 ) {
@@ -187,20 +186,27 @@ void GPSTask::runTask() {
 		// Receive any bits
 		hal_status = HAL_UART_Receive( m_huart, &uc_received, 1, 50 );
 		if ( HAL_OK == hal_status ) {
-			if ( '$' == uc_received ) {
-				m_buffer[0] = 0;
-			}
 
-			if ( 0x0A == uc_received || 0x0D == uc_received ) {
+			// End of line? Try to process it
+			if ( m_buffer_bytes > 0 && ( 0x0A == uc_received || 0x0D == uc_received ) ) {
 				if ( this->processBuffer() ) {
 					this->enqueueData();
 				}
-				m_buffer[0] = 0;
+				m_buffer_bytes = 0;
 			} else {
-				size_t c_buflen = strlen( m_buffer );
-				if ( GPSTASK_MAX_BUFFER_LENGTH - 1 >= c_buflen  ) {
-					m_buffer[ c_buflen ] = uc_received;
-					m_buffer[ c_buflen + 1 ] = 0;
+				if ( '$' == uc_received ) {
+					// First character of any sentence is always $
+					// If we receive a $, throw away anything we have and start over
+					m_buffer[ 0 ] = '$';
+					m_buffer_bytes = 1;
+				} else {
+					// If we have a $ already in the buffer, keep appending
+					// while space permits
+					if ( ( m_buffer[ 0 ] == '$' ) && ( m_buffer_bytes < GPSTASK_MAX_BUFFER_LENGTH - 1 ) ) {
+						m_buffer[ m_buffer_bytes ] = uc_received;
+						m_buffer[ m_buffer_bytes + 1 ] = 0;
+						m_buffer_bytes++;
+					}
 				}
 			}
 		}

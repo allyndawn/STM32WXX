@@ -56,6 +56,8 @@ class GPSTask {
 		osMessageQueueId_t m_queue_handle;
 
 		char m_buffer[ GPSTASK_MAX_BUFFER_LENGTH ];
+		uint8_t m_buffer_bytes;
+
 		char m_scratchpad[GPSTASK_GPRMC_TOKENS][GPSTASK_GPRMC_MAX_TOKEN_LENGTH];
 		gps_time m_time;
 		gps_location m_location;
