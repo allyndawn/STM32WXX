@@ -24,8 +24,6 @@ void RadioTask::runTask() {
 	uint8_t tx_buffer[3];
 	uint8_t rx_buffer[3];
 
-	HAL_StatusTypeDef halStatus;
-
 	if ( RADIOTASK_SEARCHING == m_state ) {
 		HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_RESET ); // nCS LOW
 
@@ -35,8 +33,8 @@ void RadioTask::runTask() {
 		rx_buffer[0] = 0;
 		rx_buffer[1] = 0;
 		rx_buffer[2] = 0;
-		halStatus = HAL_SPI_Transmit( m_hspi, &tx_buffer[0], 1, 1 );
-		halStatus = HAL_SPI_Receive( m_hspi, &rx_buffer[0], 2, 1 );
+		HAL_SPI_Transmit( m_hspi, &tx_buffer[0], 1, 1 );
+		HAL_SPI_Receive( m_hspi, &rx_buffer[0], 2, 1 );
 
 		HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_SET ); // nCS HIGH
 
@@ -48,18 +46,16 @@ void RadioTask::runTask() {
 }
 
 void RadioTask::softReset() {
-	uint8_t data;
-
 	//HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_RESET ); // nCS LOW
-	osDelay(10);
+	//osDelay(10);
 
-	data = 0x01;
+	//data = 0x01;
 	//HAL_I2C_Mem_Write( m_hi2c, RADIO_ADDRESS << 1, A1846S_CTL_REG, sizeof(uint8_t), &data, sizeof(uint8_t), 100 );
-	osDelay(100);
+	//osDelay(100);
 
-	data = 0x04;
+	//data = 0x04;
 	//HAL_I2C_Mem_Write( m_hi2c, RADIO_ADDRESS << 1, A1846S_CTL_REG, sizeof(uint8_t), &data, sizeof(uint8_t), 100 );
 
 	//HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_SET ); // nCS HIGH
-	osDelay(10);
+	//osDelay(10);
 }
