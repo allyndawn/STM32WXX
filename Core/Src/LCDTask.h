@@ -29,6 +29,8 @@ class LCDTask {
 		osMessageQueueId_t m_queue_handle;
 		LCDState m_state;
 
+		char m_buffer[64];
+
 		bool m_has_date;
 		uint16_t m_year;
 		uint8_t m_month;

@@ -10,9 +10,6 @@
 #include "string.h"
 #include "stdlib.h"
 
-#define GPS_GPRMC_TOKENS 12
-#define GPS_GPRMC_MAX_TOKEN_LENGTH 12
-
 GPSTask::GPSTask( UART_HandleTypeDef *huart, osMessageQueueId_t queue_handle ) {
 	m_huart = huart;
 	m_queue_handle = queue_handle;
@@ -25,12 +22,12 @@ GPSTask::~GPSTask() {
 	// TODO Auto-generated destructor stub
 }
 
-int8_t GPSTask::intFromString( char *buffer, int8_t offset, int8_t length ) {
+int8_t GPSTask::intFromString( int8_t index, int8_t offset, int8_t length ) {
 	int8_t value = 0;
 	int8_t digit = 0;
 	for ( int8_t i=0; i < length; i++ ) {
 		value *= 10;
-		digit = buffer[offset + i];
+		digit = m_scratchpad[index][offset + i];
 		if ( digit >= '0' && digit <= '9' ) {
 			value += digit - '0'; // Convert ASCII to number
 		}
@@ -81,10 +78,9 @@ bool GPSTask::processBuffer() {
 	}
 
 	// If we have gotten this far, we're ready to parse the tokens
-	char scratchpad[GPS_GPRMC_TOKENS][GPS_GPRMC_MAX_TOKEN_LENGTH];
 	// First, clear the tokens
-	for ( int8_t i=0; i < GPS_GPRMC_TOKENS; i++ ) {
-		scratchpad[i][0] = 0;
+	for ( int8_t i=0; i < GPSTASK_GPRMC_TOKENS; i++ ) {
+		m_scratchpad[i][0] = 0;
 	}
 
 	int8_t tokenIndex = 0;
@@ -97,15 +93,15 @@ bool GPSTask::processBuffer() {
 	for ( uint8_t i=0; i < length; i++ ) {
 		if ( ',' == m_buffer[i] ) {
 			tokenIndex++;
-		} else if (strlen( scratchpad[tokenIndex] ) < GPS_GPRMC_MAX_TOKEN_LENGTH - 1 ) {
+		} else if (strlen( m_scratchpad[tokenIndex] ) < GPSTASK_GPRMC_MAX_TOKEN_LENGTH - 1 ) {
 			dataChar[0] = m_buffer[i];
-			strcat( scratchpad[tokenIndex], dataChar );
+			strcat( m_scratchpad[tokenIndex], dataChar );
 		}
 	}
 
 	// Lastly, extract all the values we want
 	// Scratchpad Entry #2: Validity
-	if ( strncmp( "A", scratchpad[2], 1 ) != 0 ) {
+	if ( 'A' != m_scratchpad[2][0] ) {
 		return false;
 	}
 
@@ -113,60 +109,60 @@ bool GPSTask::processBuffer() {
 	gps_location new_location = { 0 };
 
 	// Scratchpad Entry #1: Time stamp (hhmmss.xx)
-	if ( strlen( scratchpad[1] ) < 6 ) {
+	if ( strlen( m_scratchpad[1] ) < 6 ) {
 		return false;
 	}
-	new_time.hour = this->intFromString( scratchpad[1], 0, 2 );
-	new_time.minutes = this->intFromString( scratchpad[1], 2, 2 );
-	new_time.seconds = this->intFromString( scratchpad[1], 4, 2 );
+	new_time.hour = this->intFromString( 1, 0, 2 );
+	new_time.minutes = this->intFromString( 1, 2, 2 );
+	new_time.seconds = this->intFromString( 1, 4, 2 );
 
 	// Scratchpad Entry #9: Date stamp (ddmmyy)
-	if ( strlen( scratchpad[9] ) != 6 ) {
+	if ( strlen( m_scratchpad[9] ) != 6 ) {
 		return false;
 	}
-	new_time.year = 2000 + this->intFromString( scratchpad[9], 4, 2 );
-	new_time.month = this->intFromString( scratchpad[9], 2, 2 );
-	new_time.day = this->intFromString( scratchpad[9], 0, 2 );
+	new_time.year = 2000 + this->intFromString( 9, 4, 2 );
+	new_time.month = this->intFromString( 9, 2, 2 );
+	new_time.day = this->intFromString( 9, 0, 2 );
 
 	uint16_t seconds = 0;
 
 	// Scratchpad Entry #3: Latitude (ddmm.xxxxx)
-	if ( strlen( scratchpad[3] ) < 7 ) {
+	if ( strlen( m_scratchpad[3] ) < 7 ) {
 		return false;
 	}
-	if ( '.' != scratchpad[3][4] ) {
+	if ( '.' != m_scratchpad[3][4] ) {
 		return false;
 	}
-	new_location.latitude.degrees = this->intFromString( scratchpad[3], 0, 2 );
-	new_location.latitude.minutes = this->intFromString( scratchpad[3], 2, 2 );
-	seconds = this->intFromString( scratchpad[3], 5, 2 );
+	new_location.latitude.degrees = this->intFromString( 3, 0, 2 );
+	new_location.latitude.minutes = this->intFromString( 3, 2, 2 );
+	seconds = this->intFromString( 3, 5, 2 );
 	seconds = seconds * 60 / 100;
 	new_location.latitude.seconds = seconds;
 
 	// Scratchpad Entry #4: North/South (N or S)
-	if ( 'N' != scratchpad[4][0] && 'S' != scratchpad[4][0] ) {
+	if ( 'N' != m_scratchpad[4][0] && 'S' != m_scratchpad[4][0] ) {
 		return false;
 	}
-	new_location.latitude.hem = scratchpad[4][0];
+	new_location.latitude.hem = m_scratchpad[4][0];
 
 	// Scratchpad Entry #5: Longitude (dddmm.xxxxx)
-	if ( strlen( scratchpad[5] ) < 8 ) {
+	if ( strlen( m_scratchpad[5] ) < 8 ) {
 		return false;
 	}
-	if ( '.' != scratchpad[5][5] ) {
+	if ( '.' != m_scratchpad[5][5] ) {
 		return false;
 	}
-	new_location.longitude.degrees = this->intFromString( scratchpad[5], 0, 3 );
-	new_location.longitude.minutes = this->intFromString( scratchpad[5], 3, 2 );
-	seconds = this->intFromString( scratchpad[5], 6, 2 );
+	new_location.longitude.degrees = this->intFromString( 5, 0, 3 );
+	new_location.longitude.minutes = this->intFromString( 5, 3, 2 );
+	seconds = this->intFromString( 5, 6, 2 );
 	seconds = seconds * 60 / 100;
 	new_location.longitude.seconds = seconds;
 
 	// Scratchpad Entry #6: East/West (E or W)
-	if ( 'E' != scratchpad[6][0] && 'W' != scratchpad[6][0] ) {
+	if ( 'E' != m_scratchpad[6][0] && 'W' != m_scratchpad[6][0] ) {
 		return false;
 	}
-	new_location.longitude.hem = scratchpad[6][0];
+	new_location.longitude.hem = m_scratchpad[6][0];
 
 	// All is well - persist the new time and location
 	m_time = new_time;

@@ -34,7 +34,15 @@ typedef struct {
 
 #include "stm32f4xx_hal.h"
 
+enum GPSTaskState {
+	GPSTASK_POWER_ON,
+	GPSTASK_INIT,
+	GPSTASK_READY
+};
+
 #define GPSTASK_MAX_BUFFER_LENGTH 96
+#define GPSTASK_GPRMC_TOKENS 12
+#define GPSTASK_GPRMC_MAX_TOKEN_LENGTH 12
 
 class GPSTask {
 	public:
@@ -48,10 +56,11 @@ class GPSTask {
 		osMessageQueueId_t m_queue_handle;
 
 		char m_buffer[ GPSTASK_MAX_BUFFER_LENGTH ];
+		char m_scratchpad[GPSTASK_GPRMC_TOKENS][GPSTASK_GPRMC_MAX_TOKEN_LENGTH];
 		gps_time m_time;
 		gps_location m_location;
 
-		int8_t intFromString( char *buffer, int8_t offset, int8_t length );
+		int8_t intFromString( int8_t index, int8_t offset, int8_t length );
 		bool processBuffer();
 		void enqueueData();
 

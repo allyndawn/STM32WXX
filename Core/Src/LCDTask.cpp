@@ -9,6 +9,7 @@
 
 #include "string.h"
 #include "stdio.h"
+#include "stdlib.h"
 
 LCDTask::LCDTask( UART_HandleTypeDef *huart, osMessageQueueId_t queue_handle ) {
 	m_huart = huart;
@@ -81,18 +82,15 @@ void LCDTask::processLocationMsg( gps_location_message *msg ) {
 }
 
 void LCDTask::runTask() {
-	char buffer[64];
-
 	// Update ourselves with any inbound messages
 	this->processQueue();
 
 	// If we've not yet spoken to the device
 	// Set it up the way we want it
 	if ( LCDTASK_POWER_ON == m_state ) {
-		buffer[0] = 0x7c;
-		buffer[1] = 0x2d;
-		buffer[2] = 0;
-		HAL_UART_Transmit( m_huart, (uint8_t *) buffer, strlen( buffer ), 40 );
+		m_buffer[0] = 0x7c;
+		m_buffer[1] = 0x2d;
+		HAL_UART_Transmit( m_huart, (uint8_t *) m_buffer, 2, 40 );
 		m_state = LCDTASK_READY;
 	}
 
@@ -111,10 +109,9 @@ void LCDTask::runTask() {
 		uint32_t ticks_as_seconds = m_os_ticks_now / m_os_ticks_per_second;
 
 		// Clear the LCD
-		buffer[0] = 0x7c;
-		buffer[1] = 0x2d;
-		buffer[2] = 0;
-		HAL_UART_Transmit( m_huart, (uint8_t *) buffer, strlen( buffer ), 40 );
+		m_buffer[0] = 0x7c;
+		m_buffer[1] = 0x2d;
+		HAL_UART_Transmit( m_huart, (uint8_t *) m_buffer, 2, 40 );
 
 		// Use modulus to rotate to one of three displays each second
 		uint8_t ticks_mod_3 = ticks_as_seconds % 3;
@@ -122,11 +119,11 @@ void LCDTask::runTask() {
 		// 0: Date
 		if ( 0 == ticks_mod_3 ) {
 			if ( ! m_has_date ) {
-				strcpy( buffer, "Waiting for GPS No time data" );
+				strcpy( m_buffer, "Waiting for GPS No time data" );
 			} else {
 				//sprintf(
-				//	buffer,
-				//	"   %2hu/%2hu/%4hu     %2hu:%2hu:%2hu UTC",
+				//	m_buffer,
+				//	"   %02u/%02u/%4u     %02u:%02u:%02u UTC",
 				//	m_month,
 				//	m_day,
 				//	m_year,
@@ -134,21 +131,15 @@ void LCDTask::runTask() {
 				//	m_minutes,
 				//	m_seconds
 				//);
-				sprintf(
-					buffer,
-					"  %2hu:%2hu:%2hu UTC",
-					m_hour,
-					m_minutes,
-					m_seconds
-				);
+				itoa( m_seconds, m_buffer, 10 );
 			}
 		}
 
 		// 1: Location
 		if ( 1 == ticks_mod_3 ) {
-			if ( ! m_has_location ) {
-				strcpy( buffer, "Waiting for GPS No location data" );
-			} else {
+			//if ( ! m_has_location ) {
+				strcpy( m_buffer, "Waiting for GPS No location data" );
+			//} else {
 				//sprintf(
 				//	buffer,
 				//	"%3hu %2hu'%2hu\" %c    %3hu %2hu'%2hu\" %c",
@@ -161,15 +152,15 @@ void LCDTask::runTask() {
 				//	m_long_sec,
 				//	m_long_hem
 				//);
-				strcpy( buffer, "Loc data ready" );
-			}
+				//strcpy( buffer, "Loc data ready" );
+			//}
 		}
 
 		// 2: Temp, Humidity, Press
 		if ( 2 == ticks_mod_3 ) {
-			if ( ! m_has_thp ) {
-				strcpy( buffer, "Waiting for THP No weather data" );
-			} else {
+			//if ( ! m_has_thp ) {
+				strcpy( m_buffer, "Waiting for THP No weather data" );
+			//} else {
 				//sprintf(
 				//	buffer,
 				//	"%3hu F %2hu%%RH     %4uhPa",
@@ -177,16 +168,13 @@ void LCDTask::runTask() {
 				//	m_humidity,
 				//	m_pressure
 				//);
-				sprintf(
-					buffer,
-					"%3hu C %2hu%% RH",
-					m_temperature,
-					m_humidity
-				);
-			}
+				itoa( m_temperature, m_buffer, 10 );
+				strcat( m_buffer, "\xDF" );
+				strcat( m_buffer, "C" );
+			//}
 		}
 
-		HAL_UART_Transmit( m_huart, (uint8_t *) buffer, strlen( buffer ), 40 );
+		HAL_UART_Transmit( m_huart, (uint8_t *) m_buffer, strlen( m_buffer ), 40 );
 	}
 
 	HAL_GPIO_WritePin( GPIOB, GPIO_PIN_14, GPIO_PIN_RESET );

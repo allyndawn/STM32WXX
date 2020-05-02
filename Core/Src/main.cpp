@@ -63,7 +63,7 @@ const osThreadAttr_t coreTask_attributes = {
   cb_size: 0,
   stack_mem : NULL,
   stack_size : 128 * 4,
-  priority : (osPriority_t) osPriorityNormal,
+  priority : (osPriority_t) osPriorityBelowNormal,
   tz_module : 0,
   reserved : 0
 };
@@ -639,6 +639,7 @@ void StartCoreTask(void *argument)
   for(;;)
   {
     coreTask.runTask();
+    osThreadYield();
   }
   /* USER CODE END 5 */ 
 }
@@ -658,7 +659,7 @@ void StartLCDTask(void *argument)
   for(;;)
   {
     lcdTask.runTask();
-    osDelay(1);
+    osThreadYield();
   }
   /* USER CODE END StartLCDTask */
 }
@@ -678,7 +679,7 @@ void StartTHPTask(void *argument)
   for(;;)
   {
     thpTask.runTask();
-    osDelay(1);
+    osThreadYield();
   }
   /* USER CODE END StartTHPTask */
 }
@@ -698,7 +699,7 @@ void StartGPSTask(void *argument)
   for(;;)
   {
     gpsTask.runTask();
-    osDelay(1);
+    osThreadYield();
   }
   /* USER CODE END StartGPSTask */
 }
@@ -717,8 +718,8 @@ void StartRadioTask(void *argument)
   RadioTask radioTask( &hspi1, radioQueueHandle );
   for(;;)
   {
-    radioTask.runTask();
-    osDelay(1);
+//    radioTask.runTask();
+    osThreadYield();
   }
   /* USER CODE END StartRadioTask */
 }
