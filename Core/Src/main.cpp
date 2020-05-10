@@ -899,9 +899,11 @@ void StartRadioTask(void *argument)
   /* USER CODE BEGIN StartRadioTask */
   /* Infinite loop */
   RadioTask radioTask( &hspi1, radioQueueHandle );
+  radioTask.setDACHandle( &hdac );
+  radioTask.setTimerHandle( &htim6 );
   for(;;)
   {
-//    radioTask.runTask();
+    radioTask.runTask();
     osThreadYield();
   }
   /* USER CODE END StartRadioTask */
