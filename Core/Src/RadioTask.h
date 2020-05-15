@@ -28,7 +28,7 @@ enum RadioClockMode {
 };
 class RadioTask {
 	public:
-		RadioTask( SPI_HandleTypeDef *hspi, osMessageQueueId_t queue_handle );
+		RadioTask( osMessageQueueId_t queue_handle );
 		virtual ~RadioTask();
 
 		void setTimerHandle( TIM_HandleTypeDef *htim );
@@ -37,7 +37,6 @@ class RadioTask {
 		void runTask();
 
 	private:
-		SPI_HandleTypeDef *m_hspi;
 		TIM_HandleTypeDef *m_htim;
 		DAC_HandleTypeDef *m_hdac;
 
@@ -50,10 +49,10 @@ class RadioTask {
 
 		bool testConnection();
 
-		void transmitTest();
+		bool transmitTest();
 
-		void initialize();
-		void softReset();
+		bool initialize();
+		bool softReset();
 
 		bool setClockMode( RadioClockMode mode );
 		bool setNarrowBand();
@@ -72,8 +71,18 @@ class RadioTask {
 
 		bool setGPIOLow( uint8_t pin );
 		bool setGPIOHigh( uint8_t pin );
-		bool writeWord( uint16_t reg, uint16_t data );
-		bool readWord( uint16_t reg, uint16_t *data );
+
+		void setSDIOForOutput();
+		void setSDIOForInput();
+
+		void setSDIO( bool on );
+		bool getSDIO();
+
+		void setSCLK( bool on );
+		void setNCS( bool on );
+
+		bool writeWord( uint8_t reg, uint16_t data );
+		bool readWord( uint8_t reg, uint16_t *data );
 };
 
 #endif /* SRC_RADIOTASK_H_ */

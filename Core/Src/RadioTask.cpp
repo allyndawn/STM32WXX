@@ -29,8 +29,7 @@ const uint16_t sine_wave_array[32] = {2047, 1648, 1264, 910, 600, 345,
 	2831, 2447
 };
 
-RadioTask::RadioTask( SPI_HandleTypeDef *hspi, osMessageQueueId_t queue_handle ) {
-	m_hspi = hspi;
+RadioTask::RadioTask( osMessageQueueId_t queue_handle ) {
 	m_htim = NULL;
 	m_hdac = NULL;
 
@@ -40,6 +39,15 @@ RadioTask::RadioTask( SPI_HandleTypeDef *hspi, osMessageQueueId_t queue_handle )
 	m_rx_on = false;
 	m_tx_on = false;
 	m_frequency = RADIOTASK_DEFAULT_FREQ;
+
+	// Initial state for the bus
+	this->setSDIOForOutput();
+	this->setSDIO( true );
+	this->setNCS( true );
+	this->setSCLK( true );
+
+	// User LED (red) off
+	HAL_GPIO_WritePin( GPIOB, GPIO_PIN_14, GPIO_PIN_RESET );
 }
 
 RadioTask::~RadioTask() {
@@ -60,18 +68,22 @@ void RadioTask::setDACHandle( DAC_HandleTypeDef *hdac ) {
  *
  * Props Artyom Sinitsin https://elastic-notes.blogspot.com/p/blog-page_1.html
  */
-void RadioTask::transmitTest() {
+bool RadioTask::transmitTest() {
 	if ( ! m_htim ) {
-		return;
+		return false;
 	}
 
 	if ( ! m_hdac ) {
-		return;
+		return false;
 	}
 
 	HAL_TIM_Base_Start( m_htim );
 	HAL_DAC_Start( m_hdac, DAC_CHANNEL_1 );
 	HAL_DAC_Start_DMA( m_hdac, DAC_CHANNEL_1, (uint32_t*)sine_wave_array, 32, DAC_ALIGN_12B_R );
+
+	// TODO
+
+	return true;
 }
 
 bool RadioTask::testConnection() {
@@ -83,7 +95,7 @@ bool RadioTask::testConnection() {
 	return (data == 0x1846);
 }
 
-void RadioTask::initialize() {
+bool RadioTask::initialize() {
 	// Sets the Chip Select (SC) line to low in order to get the radio to listen
 	// TODO - pass this port and pin as parameters to this class
 	HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_RESET );
@@ -132,13 +144,19 @@ void RadioTask::initialize() {
 	this->setTxSourceMic();
 	this->setTxPower( 0 );
 	this->setSquelchLowThreshold( -80 );
-	this->setSquelchOn( true );
+	this->setSquelchOn( false );
+
+	// TODO: Read back the frequency to make sure it worked
+
+	return true;
 }
 
-void RadioTask::softReset() {
+bool RadioTask::softReset() {
 	this->writeWord( A1846S_CTL_REG, 0x1 );
 	HAL_Delay( 100 );
 	this->writeWord( A1846S_CTL_REG, 0x4 );
+
+	return true;
 }
 
 
@@ -496,57 +514,202 @@ bool RadioTask::setGPIOHigh( uint8_t pin ) {
 	return this->writeWord( A1846S_GPIO_MODE_REG, data );
 }
 
-bool RadioTask::writeWord( uint16_t reg, uint16_t data ) {
-	uint8_t buffer[3];
+/**
+ * Sets SDIO (PB5) for output (Master to Slave)
+ */
+void RadioTask::setSDIOForOutput() {
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-	buffer[0] = reg & 0xFF;
-	buffer[1] = ( data >> 8 ) & 0xFF;
-	buffer[2] = data & 0xFF;
-
-	HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_RESET );
-
-	HAL_StatusTypeDef hal_status = HAL_SPI_Transmit( m_hspi, &buffer[0], 3, 100 );
-
-	HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_SET );
-
-	return ( HAL_OK == hal_status );
+	GPIO_InitStruct.Pin = GPIO_PIN_5;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
-bool RadioTask::readWord( uint16_t reg, uint16_t *data ) {
-	uint8_t buffer[3];
+/**
+ * Sets SDIO (PB5) for input (Slave to Master)
+ */
+void RadioTask::setSDIOForInput() {
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-	reg = reg | 0x80;	// To read, set MSb to 1
-	buffer[0] = reg & 0xFF;
-	buffer[1] = 0;
-	buffer[2] = 0;
+	GPIO_InitStruct.Pin = GPIO_PIN_5;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+}
 
-	HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_RESET );
+/**
+ * Set the SDIO pin (PB5) to on (high) or off (low).
+ * Call setSDIOForOutput before calling this.
+ */
+void RadioTask::setSDIO( bool on ) {
+	if ( on ) {
+		HAL_GPIO_WritePin( GPIOB, GPIO_PIN_5, GPIO_PIN_SET );
+	} else {
+		HAL_GPIO_WritePin( GPIOB, GPIO_PIN_5, GPIO_PIN_RESET );
+	}
+}
 
-	HAL_StatusTypeDef hal_status = HAL_SPI_Transmit( m_hspi, &(buffer[0]), 1, 10 );
-	if ( HAL_OK == hal_status ) {
-		hal_status = HAL_SPI_Receive( m_hspi, &(buffer[0]), 2, 10 );
-		if ( HAL_OK == hal_status ) {
-			*data = 0;
-			*data = buffer[0] << 8;
-			*data |= buffer[1];
-		}
+/**
+ * Get the SDIO pin (PB5) state.
+ * Call setSDIOForInput before calling this.
+ */
+bool RadioTask::getSDIO() {
+	GPIO_PinState pin_state = HAL_GPIO_ReadPin( GPIOB, GPIO_PIN_5 );
+	return ( pin_state == GPIO_PIN_SET );
+}
+
+/**
+ * Set the CLK pin (PA5) on (high) or off (low)
+ */
+void RadioTask::setSCLK( bool on ) {
+	if ( on ) {
+		HAL_GPIO_WritePin( GPIOA, GPIO_PIN_5, GPIO_PIN_SET );
+	} else {
+		HAL_GPIO_WritePin( GPIOA, GPIO_PIN_5, GPIO_PIN_RESET );
+	}
+}
+
+/**
+ * Set the NCS pin (PG9) on (slave not selected) or off (slave selected)
+ */
+void RadioTask::setNCS( bool on ) {
+	if ( on ) {
+		HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_SET );
+	} else {
+		HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_RESET );
+	}
+}
+
+bool RadioTask::writeWord( uint8_t reg, uint16_t data ) {
+	int8_t bit = 0;
+
+	// Set SDIO for output
+	this->setSDIOForOutput();
+	// Set SDIO high
+	this->setSDIO( true );
+	// Set SCLK high
+	this->setSCLK( true );
+
+	// Take NCS low to get slave to listen
+	this->setNCS( false );
+
+	// Send the register address to write to
+	// For each bit in the register address, starting with the MSb
+	for ( bit = 7; bit >= 0; bit-- ) {
+		// Take SCLK low
+		this->setSCLK( false );
+		// Set SDIO to the bit value
+		this->setSDIO( reg & ( 1 << bit ) );
+		// Sleep 1 us
+		HAL_Delay( 1 ); // 1 ms for now
+		// Take the SCLK high to prompt slave to read
+		this->setSCLK( true );
+		// Sleep 1 us
+		HAL_Delay( 1 ); // 1 ms for now
 	}
 
-	HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_SET );
+	// For each bit in the data
+	for ( bit = 15; bit >= 0; bit-- ) {
+		// Take SCLK low
+		this->setSCLK( false );
+		// Set SDIO to the bit value
+		this->setSDIO( data & ( 1 << bit ) );
+		// Sleep 1 us
+		HAL_Delay( 1 ); // 1 ms for now
+		// Take the SCLK high to prompt slave to read
+		this->setSCLK( true );
+		// Sleep 1 us
+		HAL_Delay( 1 ); // 1 ms for now
+	}
 
-	return ( HAL_OK == hal_status );
+	// We're done, take NCS high
+	this->setNCS( true );
+
+	return true;
+}
+
+bool RadioTask::readWord( uint8_t reg, uint16_t *data ) {
+	int8_t bit = 0;
+	uint16_t rx_data = 0;
+
+	// Set SDIO for output
+	this->setSDIOForOutput();
+	// Set SDIO high
+	this->setSDIO( true );
+	// Set SCLK high
+	this->setSCLK( true );
+
+	// Take NCS low to get slave to listen
+	this->setNCS( false );
+
+	// To read, we need to force the MSb on
+	reg |= 0x80;
+
+	// Send the register address to write to
+	// For each bit in the register address, starting with the MSb
+	for ( bit = 7; bit >= 0; bit-- ) {
+		// Take SCLK low
+		this->setSCLK( false );
+		// Set SDIO to the bit value
+		this->setSDIO( reg & ( 1 << bit ) );
+		// Sleep 1 us
+		HAL_Delay( 1 ); // 1 ms for now
+		// Take the SCLK high to prompt slave to read
+		this->setSCLK( true );
+		// Sleep 1 us
+		HAL_Delay( 1 ); // 1 ms for now
+	}
+
+	// Set SDIO for input
+	this->setSDIOForInput();
+
+	// For each bit in the data
+	for ( bit = 15; bit >= 0; bit-- ) {
+		// Take SCLK low
+		this->setSCLK( false );
+		// Sleep 1 us
+		HAL_Delay( 1 ); // 1 ms for now
+		// Take the SCLK high to prompt slave to write
+		this->setSCLK( true );
+		// TODO why not delay here to give slave time to set bit?
+		// Get the bit
+		if ( this->getSDIO() ) {
+			rx_data |= 1 << bit;
+		}
+		// Sleep 1 us
+		HAL_Delay( 1 ); // 1 ms for now
+	}
+
+	// We're done, take NCS high
+	this->setNCS( true );
+
+	// Return our data
+	*data = rx_data;
+
+	return true;
 }
 
 void RadioTask::runTask() {
+	uint16_t delay = 250;
+
 	if ( RADIOTASK_SEARCHING == m_state ) {
+		HAL_GPIO_TogglePin( GPIOB, GPIO_PIN_14 ); // Toggle user (red) LED
 		if ( this->testConnection() ) {
-			//this->initialize();
-			m_state = RADIOTASK_READY;
+			//if ( this->initialize() ) { // Fast blinking - initialization failing
+				m_state = RADIOTASK_READY;
+				HAL_GPIO_WritePin( GPIOB, GPIO_PIN_14, GPIO_PIN_SET ); // User (red) LED on - test + initialize succeeded
+			//}
 		} else {
+			// Slow blinking : test connection failing
+			delay = 500;
 			//m_state = RADIOTASK_RADIO_NOT_FOUND;
 		}
 	}
 
-	osDelay( 500 );
+
+	osDelay( delay );
 }
 

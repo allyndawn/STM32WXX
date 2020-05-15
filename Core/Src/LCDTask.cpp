@@ -227,8 +227,6 @@ void LCDTask::runTask() {
 		return;
 	}
 
-	HAL_GPIO_WritePin( GPIOB, GPIO_PIN_14, GPIO_PIN_SET );
-
 	// Don't bother updating the LCD more than once every two seconds
 	m_os_ticks_next_update = m_os_ticks_now + m_os_ticks_per_second;
 
@@ -264,6 +262,4 @@ void LCDTask::runTask() {
 
 		HAL_UART_Transmit( m_huart, (uint8_t *) m_buffer, strlen( m_buffer ), 40 );
 	}
-
-	HAL_GPIO_WritePin( GPIOB, GPIO_PIN_14, GPIO_PIN_RESET );
 }
