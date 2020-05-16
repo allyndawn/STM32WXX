@@ -96,11 +96,6 @@ bool RadioTask::testConnection() {
 }
 
 bool RadioTask::initialize() {
-	// Sets the Chip Select (SC) line to low in order to get the radio to listen
-	// TODO - pass this port and pin as parameters to this class
-	HAL_GPIO_WritePin( GPIOG, GPIO_PIN_9, GPIO_PIN_RESET );
-	HAL_Delay( 1 );
-
 	this->softReset();
 	this->setClockMode( RADIOTASK_12_14_MHZ );
 
@@ -137,16 +132,15 @@ bool RadioTask::initialize() {
 	this->setNarrowBand();
 	HAL_Delay( 100 );
 
-	this->setFrequency( 144390 );
-	this->setVolume( 0x7, 0x7 );
+	// this->setFrequency( 144390 );
+	this->setFrequency( 162550 );
+	this->setVolume( 0x3, 0x3 );
 	this->setRxOn( true );
 
 	this->setTxSourceMic();
 	this->setTxPower( 0 );
 	this->setSquelchLowThreshold( -80 );
 	this->setSquelchOn( false );
-
-	// TODO: Read back the frequency to make sure it worked
 
 	return true;
 }
@@ -698,13 +692,13 @@ void RadioTask::runTask() {
 	if ( RADIOTASK_SEARCHING == m_state ) {
 		HAL_GPIO_TogglePin( GPIOB, GPIO_PIN_14 ); // Toggle user (red) LED
 		if ( this->testConnection() ) {
-			//if ( this->initialize() ) { // Fast blinking - initialization failing
+			if ( this->initialize() ) { // Fast blinking - initialization failing
 				m_state = RADIOTASK_READY;
 				HAL_GPIO_WritePin( GPIOB, GPIO_PIN_14, GPIO_PIN_SET ); // User (red) LED on - test + initialize succeeded
-			//}
+			}
 		} else {
 			// Slow blinking : test connection failing
-			delay = 500;
+			delay = 1000;
 			//m_state = RADIOTASK_RADIO_NOT_FOUND;
 		}
 	}
